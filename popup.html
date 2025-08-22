@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NFPA Publications</title>
+    <link rel="icon" type="image/x-icon" href="https://nfpa-cod-production-frontend.s3.amazonaws.com/16363/favicon.ico">
+    <link rel="icon" type="image/png" href="https://nfpa-cod-production-frontend.s3.amazonaws.com/16363/favicon.ico">
+    <style>
+        /* Embedded NFPA Color Scheme & Essential Styles */
+        :root {
+            --nfpa-primary: #cc092f;
+            --nfpa-secondary: #7a0019;
+            --nfpa-accent: #ff6b35;
+            --nfpa-light: #f8f9fa;
+            --nfpa-muted: rgba(0,0,0,.54);
+            --nfpa-text: rgba(0,0,0,.87);
+            --nfpa-border: rgba(0,0,0,.12);
+        }
+
+        body {
+            font-family: sans-serif;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: var(--nfpa-text);
+            margin: 0;
+            padding: 0;
+        }
+
+        a {
+            color: var(--nfpa-secondary);
+            text-decoration: underline;
+            transition: all 0.2s linear;
+        }
+
+        a:hover, a:focus {
+            color: var(--nfpa-primary);
+            text-decoration: none;
+        }
+
+        button {
+            background-color: var(--nfpa-secondary);
+            border: 1px solid var(--nfpa-secondary);
+            border-radius: 2px;
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0.5rem 1rem;
+            transition: all 0.2s ease-in-out;
+        }
+
+        button:hover, button:focus {
+            background-color: var(--nfpa-primary);
+            border-color: var(--nfpa-primary);
+        }
+
+        /* Navigation item colors - matching NFPA site theme */
+        .nav-link {
+            color: var(--nfpa-primary) !important;
+        }
+
+        .nav-link:hover, .nav-link:focus {
+            color: var(--nfpa-primary) !important;
+        }
+
+        /* Header background */
+        .fos-menu-header {
+            background-color: var(--nfpa-primary) !important;
+        }
+
+        /* Remove hover effects from headers */
+        .fos-menu-header a:hover,
+        .fos-menu-header span:hover,
+        .fos-menu-header:hover {
+            background-color: var(--nfpa-primary) !important;
+            cursor: default;
+        }
+
+        .fos-menu-header .nav-link:hover {
+            background-color: var(--nfpa-primary) !important;
+            color: white !important;
+        }
+
+        .overlay-title:hover {
+            opacity: 1 !important;
+            text-decoration: none;
+            color: white;
+        }
+
+        /* Overlay header background */
+        .overlay-header {
+            background-color: var(--nfpa-primary) !important;
+        }
+
+        /* Button styling consistency */
+        .clear-all-btn {
+            background-color: #dc3545 !important;
+            color: white !important;
+        }
+
+        .clear-all-btn:hover {
+            background-color: #c82333 !important;
+        }
+
+        /* Pin action styling */
+        .pin-action {
+            background-color: var(--nfpa-primary) !important;
+        }
+
+        .pinned .pin-action {
+            background-color: #ffc107 !important;
+        }
+
+        /* Delete action styling */
+        .delete-action {
+            background-color: #dc3545 !important;
+        }
+
+        /* Pin indicator */
+        .pinned::before {
+            background-color: #28a745 !important;
+        }
+
+        /* Form elements */
+        input, select, textarea {
+            border: 2px solid var(--nfpa-border);
+            border-radius: 0.25rem;
+            color: var(--nfpa-muted);
+            padding: 0.5rem 0.75rem;
+            transition: border-color 0.15s ease-in-out;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--nfpa-secondary);
+            color: var(--nfpa-text);
+            outline: 0;
+        }
+
+        /* Hover effects */
+        .overlay-slot:hover .content-layer {
+            background-color: var(--nfpa-light);
+        }
+
+        .pinned .content-layer {
+            background-color: #fff9f9;
+        }
+    </style>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- ALWAYS VISIBLE DISCLAIMER - FIXED AT BOTTOM -->
+    <div class="global-disclaimer" style="font-weight: bold;">
+        Development Build: Not For Public Release.
+    </div>
+    
+    <div class="popup-container">
+        <!-- NFPA Publications Overlay - Direct Display -->
+        <div id="nfpapublications-overlay" class="nfpapublications-overlay show">
+            <!-- Header -->
+            <div class="overlay-header">
+                <a href="https://link.nfpa.org/" class="overlay-title" target="_blank" rel="noopener" title="NFPA Publications">NFPA Publications</a>
+                <button class="clear-all-btn" title="Clear all recent items">Clear All</button>
+            </div>
+            
+            <!-- Scrollable Content Area -->
+            <div class="overlay-content">
+                <!-- Main NFPA Link -->
+                <div class="overlay-main-link">
+                    <a title="NFPA Publications" href="https://link.nfpa.org/" class="nav-link" target="_blank" rel="noopener">NFPA Publications</a>
+                </div>
+                
+                <!-- Empty State Message -->
+                <div class="overlay-empty">
+                    <div class="empty-message">Recent publications will appear here after visiting NFPA documents.</div>
+                </div>
+                
+                <!-- Recent Code Slots -->
+                <div class="overlay-slot">
+                    <div class="item-content">
+                        <!-- Hidden action areas -->
+                        <div class="pin-action"></div>
+                        <div class="delete-action"></div>
+                        
+                        <!-- Sliding content layer -->
+                        <div class="content-layer">
+                            <a title="" href="#" class="nav-link disabled"></a>
+                        </div>
+                        
+                        <!-- Invisible clickable buttons -->
+                        <button class="pin-btn"></button>
+                        <button class="delete-btn"></button>
+                    </div>
+                </div>
+                <div class="overlay-slot">
+                    <div class="item-content">
+                        <!-- Hidden action areas -->
+                        <div class="pin-action"></div>
+                        <div class="delete-action"></div>
+                        
+                        <!-- Sliding content layer -->
+                        <div class="content-layer">
+                            <a title="" href="#" class="nav-link disabled"></a>
+                        </div>
+                        
+                        <!-- Invisible clickable buttons -->
+                        <button class="pin-btn"></button>
+                        <button class="delete-btn"></button>
+                    </div>
+                </div>
+                <div class="overlay-slot">
+                    <div class="item-content">
+                        <!-- Hidden action areas -->
+                        <div class="pin-action"></div>
+                        <div class="delete-action"></div>
+                        
+                        <!-- Sliding content layer -->
+                        <div class="content-layer">
+                            <a title="" href="#" class="nav-link disabled"></a>
+                        </div>
+                        
+                        <!-- Invisible clickable buttons -->
+                        <button class="pin-btn"></button>
+                        <button class="delete-btn"></button>
+                    </div>
+                </div>
+                <div class="overlay-slot">
+                    <div class="item-content">
+                        <!-- Hidden action areas -->
+                        <div class="pin-action"></div>
+                        <div class="delete-action"></div>
+                        
+                        <!-- Sliding content layer -->
+                        <div class="content-layer">
+                            <a title="" href="#" class="nav-link disabled"></a>
+                        </div>
+                        
+                        <!-- Invisible clickable buttons -->
+                        <button class="pin-btn"></button>
+                        <button class="delete-btn"></button>
+                    </div>
+                </div>
+                <div class="overlay-slot">
+                    <div class="item-content">
+                        <!-- Hidden action areas -->
+                        <div class="pin-action"></div>
+                        <div class="delete-action"></div>
+                        
+                        <!-- Sliding content layer -->
+                        <div class="content-layer">
+                            <a title="" href="#" class="nav-link disabled"></a>
+                        </div>
+                        
+                        <!-- Invisible clickable buttons -->
+                        <button class="pin-btn"></button>
+                        <button class="delete-btn"></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>
