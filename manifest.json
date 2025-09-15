@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "NFPA Publications Bookmark Extension",
+  "name": "NFPA Publications Extension",
   "version": "0.0.1",
   "description": "Quick access to recent and pinned NFPA publications.",
   "permissions": [
@@ -9,9 +9,11 @@
   ],
   "content_scripts": [
     {
-      "matches": ["https://link.nfpa.org/publications/*/*"],
+      "matches": [
+        "https://link.nfpa.org/*"
+      ],
       "js": ["content-tracker.js"],
-      "run_at": "document_idle"
+      "run_at": "document_start"
     }
   ],
   "action": {
