@@ -1,35 +1,38 @@
+/*
+ * NFPA Publications Extension - Popup Interface
+ * 
+ * Manages the extension popup UI including:
+ * - Loading and displaying recent/pinned publications
+ * - Sliding gesture interactions for pin/delete actions
+ * - Event handling for publication management
+ * - Storage operations for user preferences
+ */
+
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('=== NFPA Publications Popup DOM loaded ===');
-    
-    // Debug: Check what's in storage immediately
-    chrome.storage.local.get(['recentNfpaPublications', 'pinnedNfpaPublications'], function(result) {
-        console.log('Initial storage check:', result);
-    });
-    
-    // Load recent NFPA Publications pages
+    // Initialize the popup interface
     loadRecentNfpaPublications();
-    
-    // Setup sliding effects and handlers
     setupSlidingEffects();
 });
 
+/**
+ * Toggle pin state for a publication
+ * @param {HTMLElement} slot - The publication slot element
+ * @param {HTMLElement} link - The publication link element
+ */
 function togglePin(slot, link) {
     const codeBase = extractCodeBaseFromUrl(link.href);
-    
     if (!codeBase) return;
     
     chrome.storage.local.get(['pinnedNfpaPublications'], function(result) {
         let pinnedCodes = result.pinnedNfpaPublications || [];
         const isCurrentlyPinned = pinnedCodes.some(code => code.codeBase === codeBase);
-        const pinBtn = slot.querySelector('.pin-btn');
         
         if (isCurrentlyPinned) {
-            // Unpin
+            // Unpin: remove from pinned list
             pinnedCodes = pinnedCodes.filter(code => code.codeBase !== codeBase);
             slot.classList.remove('pinned');
-            if (pinBtn) pinBtn.classList.remove('pinned');
         } else {
-            // Pin
+            // Pin: add to pinned list
             const pinnedCode = {
                 codeBase: codeBase,
                 title: link.textContent,
@@ -38,80 +41,66 @@ function togglePin(slot, link) {
             };
             pinnedCodes.push(pinnedCode);
             slot.classList.add('pinned');
-            if (pinBtn) pinBtn.classList.add('pinned');
         }
         
         chrome.storage.local.set({pinnedNfpaPublications: pinnedCodes}, function() {
-            // Reload the submenu to reorder items
-            loadRecentNfpaPublications();
+            loadRecentNfpaPublications(); // Refresh display
         });
     });
 }
 
+/**
+ * Set up mouse-based sliding gesture detection for publication slots
+ */
 function setupSlidingEffects() {
-    console.log('Setting up sliding effects...');
-    
     const container = document.querySelector('.nfpapublications-overlay');
-    if (!container) {
-        console.error('No container found for setupSlidingEffects');
-        return;
-    }
+    if (!container) return;
     
     const items = container.querySelectorAll('.overlay-slot');
-    console.log('Found overlay slots:', items.length);
     
-    items.forEach((item, index) => {
-        console.log(`Setting up sliding for slot ${index}:`, item);
-        
+    items.forEach((item) => {
         const itemContent = item.querySelector('.item-content');
-        if (!itemContent) {
-            console.log(`No item-content found in slot ${index}`);
-            return;
-        }
+        if (!itemContent) return;
         
         // Remove existing event listeners to avoid duplicates
         item.removeEventListener('mousemove', item._mouseMoveHandler);
         item.removeEventListener('mouseleave', item._mouseLeaveHandler);
         
-        // Create and store event handlers
+        // Mouse move handler for edge detection
         item._mouseMoveHandler = (e) => {
             const rect = item.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const width = rect.width;
-            const edgeZone = 60; // 60px from each edge
+            const edgeZone = 60; // 60px edge detection zone
             
-            console.log(`Mouse at ${x}px in ${width}px wide slot`);
-            
-            // Clear previous classes
+            // Clear previous slide states
             item.classList.remove('slide-left', 'slide-right');
             
             if (x <= edgeZone) {
-                // Hovering left edge - show pin/unpin button
+                // Left edge: show pin/unpin button
                 item.classList.add('slide-right');
-                console.log('Adding slide-right class (showing pin button)');
             } else if (x >= width - edgeZone) {
-                // Hovering right edge - show delete button  
+                // Right edge: show delete button
                 item.classList.add('slide-left');
-                console.log('Adding slide-left class (showing delete button)');
             }
         };
         
+        // Mouse leave handler to reset state
         item._mouseLeaveHandler = () => {
             item.classList.remove('slide-left', 'slide-right');
-            console.log('Mouse left, removing slide classes');
             
-            // Add a brief delay before re-enabling link clicks
+            // Brief delay before re-enabling link clicks
             item._linkClickDisabled = true;
             setTimeout(() => {
                 item._linkClickDisabled = false;
             }, 150);
         };
         
-        // Add event listeners
+        // Attach event listeners
         item.addEventListener('mousemove', item._mouseMoveHandler);
         item.addEventListener('mouseleave', item._mouseLeaveHandler);
         
-        // Reattach button functionality
+        // Set up button click handlers
         const pinBtn = item.querySelector('.pin-btn');
         const deleteBtn = item.querySelector('.delete-btn');
         const link = item.querySelector('.content-layer .nav-link');
@@ -121,7 +110,6 @@ function setupSlidingEffects() {
             pinBtn._clickHandler = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Pin button clicked');
                 if (!link.classList.contains('disabled')) {
                     togglePin(item, link);
                 }
@@ -134,29 +122,36 @@ function setupSlidingEffects() {
             deleteBtn._clickHandler = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Delete button clicked');
                 if (!link.classList.contains('disabled')) {
                     deleteItem(link);
                 }
             };
             deleteBtn.addEventListener('click', deleteBtn._clickHandler);
         }
-        
-        console.log(`Slot ${index} setup complete`);
     });
-    
-    console.log('Sliding effects setup complete for all slots');
 }
 
+/**
+ * Extract publication code base from URL for storage key matching
+ * @param {string} url - Publication URL
+ * @returns {string|null} - Code base (e.g., "NFPA-2-2023") or null
+ */
 function extractCodeBaseFromUrl(url) {
-    // NFPA URL pattern: https://link.nfpa.org/publications/2/2023
-    const match = url.match(/https:\/\/link\.nfpa\.org\/publications\/([^\/]+)\/([^\/\?]+)/);
+    // Handle both standard and free-access URL patterns
+    const standardMatch = url.match(/https:\/\/link\.nfpa\.org\/publications\/([^\/]+)\/([^\/\?]+)/);
+    const freeAccessMatch = url.match(/https:\/\/link\.nfpa\.org\/free-access\/publications\/([^\/]+)\/([^\/\?]+)/);
+    
+    const match = standardMatch || freeAccessMatch;
     if (match) {
         return `NFPA-${match[1]}-${match[2]}`;
     }
     return null;
 }
 
+/**
+ * Delete a publication from both recent and pinned lists
+ * @param {HTMLElement} link - The publication link element
+ */
 function deleteItem(link) {
     const codeBase = extractCodeBaseFromUrl(link.href);
     if (!codeBase) return;
@@ -165,7 +160,7 @@ function deleteItem(link) {
         let recentPages = result.recentNfpaPublications || [];
         let pinnedPages = result.pinnedNfpaPublications || [];
         
-        // Remove from both recent and pinned
+        // Remove from both lists
         recentPages = recentPages.filter(page => page.codeBase !== codeBase);
         pinnedPages = pinnedPages.filter(page => page.codeBase !== codeBase);
         
@@ -173,46 +168,41 @@ function deleteItem(link) {
             recentNfpaPublications: recentPages,
             pinnedNfpaPublications: pinnedPages
         }, function() {
-            loadRecentNfpaPublications();
+            loadRecentNfpaPublications(); // Refresh display
         });
     });
 }
 
+/**
+ * Clear all saved publications with user confirmation
+ */
 function clearAllItems() {
     if (confirm('Clear all recent and pinned NFPA Publications items?')) {
         chrome.storage.local.remove(['recentNfpaPublications', 'pinnedNfpaPublications'], function() {
-            loadRecentNfpaPublications();
+            loadRecentNfpaPublications(); // Refresh display
         });
     }
 }
 
+/**
+ * Load and display recent/pinned publications in the popup
+ */
 function loadRecentNfpaPublications() {
-    console.log('=== loadRecentNfpaPublications() called ===');
-    
     chrome.storage.local.get(['recentNfpaPublications', 'pinnedNfpaPublications'], function(result) {
         const recentPages = result.recentNfpaPublications || [];
         const pinnedPages = result.pinnedNfpaPublications || [];
         
-        console.log('Raw storage result:', result);
-        console.log('Loading recent codes:', recentPages);
-        console.log('Loading pinned codes:', pinnedPages);
-        
-        // Get empty state element and available slots
+        // Get UI elements
         const overlay = document.querySelector('.nfpapublications-overlay');
         const emptyState = overlay.querySelector('.overlay-empty');
         const availableSlots = overlay.querySelectorAll('.overlay-slot');
         
-        console.log('Found overlay:', overlay);
-        console.log('Found empty state:', emptyState);
-        console.log('Found available slots:', availableSlots.length);
-        
-        // Hide all available slots initially
-        availableSlots.forEach((item, index) => {
-            console.log(`Resetting slot ${index}`);
+        // Reset all slots
+        availableSlots.forEach((item) => {
             item.style.display = 'none';
-            item.classList.remove('show');
-            const link = item.querySelector('.content-layer .nav-link');
+            item.classList.remove('show', 'pinned');
             
+            const link = item.querySelector('.content-layer .nav-link');
             if (link) {
                 link.textContent = '';
                 link.href = '#';
@@ -221,45 +211,31 @@ function loadRecentNfpaPublications() {
                 link.classList.add('disabled');
                 link.title = '';
             }
-            
-            item.classList.remove('pinned');
         });
         
-        // Combine pinned and recent pages, prioritizing pinned, limit to 5
+        // Combine pinned and recent (pinned first, max 5 total)
         const allPages = [...pinnedPages, ...recentPages.filter(page => 
             !pinnedPages.some(pinned => pinned.codeBase === page.codeBase)
         )].slice(0, 5);
         
-        console.log('Combined pages to display:', allPages);
-        console.log('Available slots found:', availableSlots.length);
-        
-        // Show empty state if no pages, otherwise hide it
+        // Show empty state or populate slots
         if (allPages.length === 0) {
-            console.log('Showing empty state - no pages found');
             if (emptyState) {
                 emptyState.style.display = '';
                 emptyState.classList.remove('hidden');
             }
         } else {
-            console.log('Hiding empty state, showing', allPages.length, 'publications');
             if (emptyState) {
                 emptyState.style.display = 'none';
                 emptyState.classList.add('hidden');
             }
-        }
-        
-        // Populate available slots with combined pages (up to 5)
-        allPages.forEach((page, index) => {
-            const slot = availableSlots[index];
-            console.log(`Processing page ${index}:`, page);
-            console.log(`Using slot ${index}:`, slot);
             
-            if (slot) {
+            // Populate publication slots
+            allPages.forEach((page, index) => {
+                const slot = availableSlots[index];
+                if (!slot) return;
+                
                 const link = slot.querySelector('.content-layer .nav-link');
-                const pinBtn = slot.querySelector('.pin-btn');
-                
-                console.log('Found elements in slot:', { link: !!link, pinBtn: !!pinBtn });
-                
                 if (link) {
                     link.textContent = page.title;
                     link.href = page.url;
@@ -267,44 +243,31 @@ function loadRecentNfpaPublications() {
                     link.rel = 'noopener';
                     link.classList.remove('disabled');
                     link.title = page.title;
-                    
-                    console.log(`Set link text to: "${page.title}"`);
-                    console.log(`Set link href to: "${page.url}"`);
                 }
                 
-                // Check if this page is pinned
+                // Mark pinned items
                 const isPinned = pinnedPages.some(pinned => pinned.codeBase === page.codeBase);
                 if (isPinned) {
                     slot.classList.add('pinned');
-                    if (pinBtn) pinBtn.classList.add('pinned');
-                    console.log(`Slot ${index} marked as pinned`);
-                } else {
-                    slot.classList.remove('pinned');
-                    if (pinBtn) pinBtn.classList.remove('pinned');
-                    console.log(`Slot ${index} marked as unpinned`);
                 }
                 
-                // Show this slot
+                // Show the slot
                 slot.style.display = '';
                 slot.classList.add('show');
-                console.log(`Slot ${index} populated and shown`);
-            }
-        });
+            });
+        }
         
-        // Re-setup sliding effects after loading items
+        // Re-setup interactions after content update
         setTimeout(() => setupSlidingEffects(), 100);
-        
-        // Setup event handlers
         setupEventHandlers();
-        
-        console.log(`=== Loaded ${allPages.length} publications (limit: 5) ===`);
     });
 }
 
+/**
+ * Set up global event handlers using event delegation
+ */
 function setupEventHandlers() {
-    console.log('Setting up event handlers...');
-    
-    // Handle pin button clicks - use event delegation for overlay slots
+    // Pin button clicks
     if (!window.pinHandlerAttached) {
         window.pinHandlerAttached = true;
         document.addEventListener('click', function(e) {
@@ -323,7 +286,7 @@ function setupEventHandlers() {
         });
     }
     
-    // Handle delete button clicks - use event delegation for overlay slots
+    // Delete button clicks
     if (!window.deleteHandlerAttached) {
         window.deleteHandlerAttached = true;
         document.addEventListener('click', function(e) {
@@ -342,7 +305,7 @@ function setupEventHandlers() {
         });
     }
     
-    // Handle nav-link clicks - prevent navigation when sliding
+    // Publication link clicks
     if (!window.linkHandlerAttached) {
         window.linkHandlerAttached = true;
         document.addEventListener('click', function(e) {
@@ -350,29 +313,22 @@ function setupEventHandlers() {
                 const slot = e.target.closest('.overlay-slot');
                 const link = e.target;
                 
-                // If we're sliding (showing action buttons), prevent link navigation
-                if (slot.classList.contains('slide-left') || slot.classList.contains('slide-right') || slot._linkClickDisabled) {
-                    e.preventDefault();
-                    console.log('Link click prevented during/after sliding');
-                    return false;
-                }
-                
-                // If link is disabled, prevent navigation
-                if (link.classList.contains('disabled')) {
+                // Prevent navigation during sliding or if disabled
+                if (slot.classList.contains('slide-left') || 
+                    slot.classList.contains('slide-right') || 
+                    slot._linkClickDisabled ||
+                    link.classList.contains('disabled')) {
                     e.preventDefault();
                     return false;
                 }
                 
-                // Otherwise, allow normal link behavior and close popup
-                console.log('Link click allowed:', link.href);
-                setTimeout(() => {
-                    window.close();
-                }, 100);
+                // Close popup after navigation
+                setTimeout(() => window.close(), 100);
             }
         });
     }
     
-    // Handle clear all button click - use event delegation to avoid duplicates
+    // Clear all button
     if (!window.clearHandlerAttached) {
         window.clearHandlerAttached = true;
         document.addEventListener('click', function(e) {
@@ -384,12 +340,10 @@ function setupEventHandlers() {
         });
     }
     
-    // Handle main link clicks to close popup
+    // Main link clicks (close popup)
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('nav-link') && e.target.closest('.overlay-main-link')) {
-            setTimeout(() => {
-                window.close();
-            }, 100);
+            setTimeout(() => window.close(), 100);
         }
     });
 }
