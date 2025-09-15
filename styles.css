@@ -1,6 +1,29 @@
-/* NFPA Publications Menu Override Styles - Bookmark-Only Version */
+/* 
+ * NFPA Publications Extension - Main Stylesheet
+ * 
+ * This extension provides quick access to recently visited NFPA publications
+ * through a popup interface that mimics the NFPA website's navigation menu.
+ * 
+ * Key Components:
+ * - Global disclaimer bar (always visible at bottom)
+ * - Main popup container (300x372px fixed dimensions)
+ * - NFPA-style navigation menu with sliding interactions
+ * - Publication slots with pin/delete functionality
+ */
 
-/* GLOBAL DISCLAIMER - ALWAYS VISIBLE AT BOTTOM */
+/* Browser reset for consistent rendering */
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* =========================
+ * GLOBAL DISCLAIMER BAR
+ * ========================= */
 .global-disclaimer {
     position: fixed !important;
     bottom: 0 !important;
@@ -20,16 +43,23 @@
     border-top: 1px solid #e0c000 !important;
 }
 
-/* Popup container - leave space for disclaimer at bottom */
+/* =========================
+ * MAIN POPUP CONTAINER
+ * ========================= */
 .popup-container {
     width: 300px;
-    height: 372px; /* Fixed height */
+    height: 372px;
     font-family: Arial, sans-serif;
     position: relative;
     overflow: hidden;
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
-/* Ensure the FOS menu shows properly */
+/* =========================
+ * NFPA MENU INTEGRATION
+ * ========================= */
+/* Show/hide states for the main FOS menu */
 .fos-menu-ul.show-fos {
     display: block !important;
     visibility: visible !important;
@@ -39,7 +69,7 @@
     display: none !important;
 }
 
-/* Basic styling fallback in case NFPA's CSS doesn't load */
+/* Base menu styling - fallback if NFPA CSS doesn't load */
 #fos-flyout-menu {
     list-style: none;
     margin: 0;
@@ -59,10 +89,10 @@
     box-sizing: border-box;
     display: flex;
     align-items: center;
-    justify-content: space-between; /* Space out text and arrow */
+    justify-content: space-between;
 }
 
-/* NFPA Codes menu arrow positioning */
+/* NFPA Codes menu arrow styling */
 .nfpacodes-toggle .menu-arrow {
     color: #cc092f;
     font-size: 14px;
@@ -77,20 +107,19 @@
     background-color: #f5f5f5;
 }
 
-/* Header styling */
+/* Header styling for main menu items */
 .fos-menu-header a,
 .fos-menu-header span {
     font-weight: bold;
     background-color: #cc092f;
     color: white !important;
     display: block;
-    padding: 14.5px 15px; /* Adjusted for 48px height */
+    padding: 14.5px 15px;
     text-decoration: none;
     box-sizing: border-box;
-    height: 48px; /* Reduced to 48px */
+    height: 48px;
 }
 
-/* Remove hover effect from header */
 .fos-menu-header a:hover,
 .fos-menu-header span:hover {
     background-color: #cc092f !important;
@@ -111,28 +140,30 @@
     content: none !important;
 }
 
-/* Override any mask or background images */
 .fos-menu-link a {
     background-image: none !important;
-    padding-left: 15px !important; /* Standard padding, no room for icons */
+    padding-left: 15px !important;
     -webkit-mask-image: none !important;
     mask-image: none !important;
 }
 
-/* Submenu styles */
+/* Submenu arrow styling */
 .has-submenu .arrow {
     float: right;
     font-size: 16px;
     transition: transform 0.2s ease;
 }
 
-/* NFPA Publications Overlay - Direct Display */
+/* =========================
+ * NFPA PUBLICATIONS OVERLAY
+ * ========================= */
+/* Main overlay container - contains the publications list */
 .nfpapublications-overlay {
     position: relative;
     top: 0;
     left: 0;
     width: 100%;
-    height: 344px; /* Reduced to leave space for disclaimer */
+    height: 344px; /* 372px total - 28px disclaimer */
     background: white;
     border: 1px solid #ddd;
     border-radius: 0;
@@ -140,8 +171,8 @@
     transform: translateX(0);
     transition: all 0.3s ease;
     z-index: 1001;
-    margin: 0;
-    padding: 0;
+    margin: 0 !important;
+    padding: 0 !important;
     overflow: hidden;
     box-sizing: border-box;
     display: flex;
@@ -149,18 +180,20 @@
 }
 
 .nfpapublications-overlay.show {
-    transform: translateX(0); /* Always visible */
+    transform: translateX(0);
 }
 
-/* Header Section - Fixed Height */
+/* =========================
+ * OVERLAY HEADER SECTION
+ * ========================= */
 .overlay-header {
     height: 48px;
     background: #cc092f;
     border-bottom: 1px solid #ddd;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 0;
+    padding: 0 !important;
+    margin: 0 !important;
     box-sizing: border-box;
     flex-shrink: 0;
 }
@@ -187,21 +220,23 @@
     font-weight: 600;
     font-size: 16px;
     flex: 1;
-    text-align: center;
+    text-align: left;
     text-decoration: none;
-    cursor: pointer;
-    transition: opacity 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    cursor: default;
+    display: block;
+    line-height: 48px;
     height: 48px;
     box-sizing: border-box;
+    padding: 0 0 0 16px !important;
+    margin: 0 !important;
 }
 
-.overlay-title:hover {
-    opacity: 0.8;
-    text-decoration: none;
-    color: white;
+.overlay-header .overlay-title {
+    padding: 0 0 0 16px !important;
+    margin: 0 !important;
+    text-indent: 0 !important;
+    border: none !important;
+    outline: none !important;
 }
 
 .overlay-header .clear-all-btn {
@@ -209,16 +244,19 @@
     color: white !important;
     border: none !important;
     padding: 9.5px 12px !important;
-    margin: 7.5px 16px 7.5px 0 !important;
+    margin: 0 16px 0 0 !important;
     border-radius: 4px !important;
     cursor: pointer !important;
     font-size: 12px !important;
     font-weight: bold !important;
     transition: background-color 0.2s ease !important;
     box-sizing: border-box !important;
+    flex-shrink: 0;
 }
 
-/* Content Section - Now takes remaining space without footer */
+/* =========================
+ * OVERLAY CONTENT SECTION
+ * ========================= */
 .overlay-content {
     flex: 1;
     overflow-y: auto;
@@ -227,18 +265,7 @@
     min-height: 0;
 }
 
-/* Pinned item indicator */
-.overlay-slot.pinned::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: #28a745;
-    z-index: 1;
-}
-
+/* Main link to NFPA publications page */
 .overlay-main-link {
     display: block;
     border-bottom: 1px solid #eee;
@@ -263,6 +290,7 @@
     background-color: #f8f9fa;
 }
 
+/* Empty state when no publications are saved */
 .overlay-empty {
     display: none;
     padding: 20px 16px;
@@ -275,6 +303,10 @@
     display: block;
 }
 
+/* =========================
+ * PUBLICATION SLOTS
+ * ========================= */
+/* Individual publication item container */
 .overlay-slot {
     display: none;
     position: relative;
@@ -286,117 +318,7 @@
     display: block;
 }
 
-.overlay-slot .item-content {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    background: white;
-    min-height: 44px;
-    position: relative;
-    overflow: hidden;
-}
-
-/* Hidden action areas behind the content */
-.overlay-slot .pin-action,
-.overlay-slot .delete-action {
-    position: absolute;
-    top: 0;
-    height: 100%;
-    width: 80px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1;
-    min-height: 48px; /* Updated for 48px height */
-}
-
-.overlay-slot .pin-action {
-    left: 0;
-    background: #cc092f;
-    color: white;
-}
-
-.overlay-slot .delete-action {
-    right: 0;
-    background: #dc3545;
-    color: white;
-}
-
-/* The sliding content layer */
-.overlay-slot .content-layer {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    background: white;
-    height: 48px; /* Reduced to 48px */
-    position: relative;
-    z-index: 2;
-    transition: transform 0.3s ease, background-color 0.2s ease;
-}
-
-/* Subtle hover effect for entire cell (only for unpinned items) */
-.overlay-slot:not(.pinned):hover .content-layer {
-    background-color: #f8f9fa;
-}
-
-/* Pinned items have a subtle red background */
-.overlay-slot.pinned .content-layer {
-    background-color: #fff9f9;
-}
-
-/* Overlay buttons - only active during sliding */
-.overlay-slot .pin-btn,
-.overlay-slot .delete-btn {
-    position: absolute;
-    top: 0;
-    width: 80px;
-    height: 100%;
-    min-height: 48px; /* Updated for 48px height */
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    z-index: 4;
-    opacity: 0;
-    pointer-events: none; /* Disabled by default */
-    transition: opacity 0.2s ease;
-}
-
-.overlay-slot .pin-btn {
-    left: 0;
-}
-
-.overlay-slot .delete-btn {
-    right: 0;
-}
-
-/* Enable buttons only when sliding */
-.overlay-slot.slide-right .pin-btn,
-.overlay-slot.slide-left .delete-btn {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-/* Link inside content layer - full clickable area */
-.overlay-slot .content-layer .nav-link {
-    flex: 1;
-    padding: 14.5px 16px;
-    color: #cc092f;
-    text-decoration: none;
-    font-weight: 500;
-    background: inherit;
-    border: none;
-    box-sizing: border-box;
-    position: relative;
-    cursor: pointer;
-    line-height: 1.4;
-    
-    /* Single line with ellipsis */
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* Pinned items show green left edge - no sliding when pinned */
+/* Pinned publications get a green left border indicator */
 .overlay-slot.pinned {
     position: relative;
 }
@@ -412,7 +334,98 @@
     z-index: 4;
 }
 
-/* Sliding animations work for both pinned and unpinned items */
+.overlay-slot .item-content {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    background: white;
+    min-height: 44px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* =========================
+ * SLIDING INTERACTION SYSTEM
+ * ========================= */
+/* Hidden action areas behind the content that appear when sliding */
+.overlay-slot .pin-action,
+.overlay-slot .delete-action {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+    min-height: 48px;
+}
+
+.overlay-slot .pin-action {
+    left: 0;
+    color: white;
+}
+
+.overlay-slot .delete-action {
+    right: 0;
+    background: #dc3545;
+    color: white;
+}
+
+/* The main content layer that slides to reveal actions */
+.overlay-slot .content-layer {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    background: white;
+    height: 48px;
+    position: relative;
+    z-index: 2;
+    transition: transform 0.3s ease, background-color 0.2s ease;
+}
+
+/* Hover effects for different states */
+.overlay-slot:not(.pinned):hover .content-layer {
+    background-color: #f8f9fa;
+}
+
+.overlay-slot.pinned .content-layer {
+    background-color: #fff9f9;
+}
+
+/* Invisible overlay buttons that become active during sliding */
+.overlay-slot .pin-btn,
+.overlay-slot .delete-btn {
+    position: absolute;
+    top: 0;
+    width: 80px;
+    height: 100%;
+    min-height: 48px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    z-index: 4;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.overlay-slot .pin-btn {
+    left: 0;
+}
+
+.overlay-slot .delete-btn {
+    right: 0;
+}
+
+/* Enable buttons only when actively sliding */
+.overlay-slot.slide-right .pin-btn,
+.overlay-slot.slide-left .delete-btn {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Sliding animations */
 .overlay-slot.slide-right .content-layer {
     transform: translateX(80px);
 }
@@ -421,22 +434,35 @@
     transform: translateX(-80px);
 }
 
-/* Show action areas during sliding */
 .overlay-slot.slide-right .pin-action,
 .overlay-slot.slide-left .delete-action {
     opacity: 1;
 }
 
-/* Different pin action styling for pinned vs unpinned */
-.overlay-slot:not(.pinned) .pin-action {
-    background: #cc092f; /* Red for pin */
+/* =========================
+ * PUBLICATION LINKS
+ * ========================= */
+.overlay-slot .content-layer .nav-link {
+    flex: 1;
+    padding: 14.5px 16px;
+    color: #cc092f;
+    text-decoration: none;
+    font-weight: 500;
+    background: inherit;
+    border: none;
+    box-sizing: border-box;
+    position: relative;
+    cursor: pointer;
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.overlay-slot.pinned .pin-action {
-    background: #ffc107; /* Yellow/amber for unpin */
-}
-
-/* Action area icons */
+/* =========================
+ * ACTION ICONS (SVG)
+ * ========================= */
+/* Pin icon for unpinned items */
 .overlay-slot:not(.pinned) .pin-action::before {
     content: "";
     width: 24px;
@@ -447,6 +473,7 @@
     background-position: center;
 }
 
+/* Unpin icon for pinned items */
 .overlay-slot.pinned .pin-action::before {
     content: "";
     width: 24px;
@@ -457,6 +484,7 @@
     background-position: center;
 }
 
+/* Delete/trash icon */
 .overlay-slot .delete-action::before {
     content: "";
     width: 24px;
@@ -467,218 +495,13 @@
     background-position: center;
 }
 
-.submenu-back {
-    background: #cc092f;
-    border-bottom: 1px solid #ddd;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0;
-    margin-bottom: 0;
-    height: auto;
-}
-
-.submenu-back .back-button {
-    color: white !important;
-    font-weight: bold;
-    padding: 10px 15px;
-    flex: 1;
-    transition: none !important;
-    text-decoration: none;
-    background: transparent !important;
-    border: none !important;
-    outline: none !important;
-    -webkit-user-select: none !important;
-    -moz-user-select: none !important;
-    -ms-user-select: none !important;
-    user-select: none !important;
-}
-
-.submenu-back .back-button:hover {
-    background: transparent !important;
-    color: white !important;
-}
-
-.submenu-back .back-button:focus {
-    outline: none !important;
-    background: transparent !important;
-}
-
-/* Clear All button styling - MAXIMUM SPECIFICITY */
-#submenu-nfpacodes .submenu-back .clear-all-btn {
-    background: #dc3545 !important;
-    color: white !important;
-    border: none !important;
-    padding: 6px 12px !important;
-    border-radius: 4px !important;
-    cursor: pointer !important;
-    font-size: 11px !important;
-    margin: 10px 15px !important;
-    display: inline-block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    position: relative !important;
-    z-index: 9999 !important;
-    height: auto !important;
-    line-height: 1.2 !important;
-}
-
-.submenu-back .clear-all-btn:hover {
-    background: #dc2626 !important;
-    color: white !important;
-}
-
-.submenu-back .clear-all-btn:focus {
-    outline: none !important;
-    background: #dc2626 !important;
-}
-
-/* Make submenu items look like main menu items */
-.submenu-item {
-    border-bottom: 1px solid #eee;
-    margin-bottom: 0 !important;
-    background: white !important;
-    border-radius: 0 !important;
-    padding: 0 !important;
-}
-
-.submenu-item:hover {
-    background: white !important;
-    box-shadow: none !important;
-}
-
-.submenu-item .nav-link {
-    display: block !important;
-    padding: 10px 15px !important;
-    color: #cc092f !important;
-    font-weight: normal !important;
-    text-decoration: none !important;
-    margin: 0 !important;
-    flex: none !important;
-    background: transparent !important;
-    transition: none !important;
-}
-
-.submenu-item .nav-link:hover {
-    color: #cc092f !important;
-    background: white !important;
-}
-
-/* Simple sliding reveal system for submenu slots */
-.submenu-item.submenu-slot {
-    position: relative !important;
-    overflow: hidden !important;
-    border-bottom: 1px solid #eee !important;
-    margin-bottom: 0 !important;
-    background: white !important;
-    padding: 0 !important;
-    transition: none !important;
-}
-
-.submenu-item.submenu-slot:hover {
-    background: white !important;
-}
-
-.item-content {
-    display: flex !important;
-    align-items: center !important;
-    width: 100% !important;
-    transition: transform 0.3s ease !important;
-    position: relative !important;
-}
-
-.submenu-item.pinned {
-    background-color: rgba(204, 9, 47, 0.02);
-    position: relative;
-}
-
-.submenu-item.pinned::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: #28a745;
-    z-index: 1;
-}
-
-.clear-all-btn {
-    background: rgba(220, 53, 69, 0.1) !important;
-    border: 1px solid rgba(220, 53, 69, 0.2) !important;
-    font-size: 10px;
-    padding: 4px 8px;
-    cursor: pointer;
-    color: #dc3545 !important;
-    transition: all 0.2s ease;
-    border-radius: 4px;
-    font-weight: 500;
-    margin: 0 8px 0 0;
-    flex-shrink: 0;
-}
-
-.clear-all-btn:hover {
-    background-color: rgba(220, 53, 69, 0.15) !important;
-    border-color: rgba(220, 53, 69, 0.3) !important;
-}
-
-.clear-all-btn:active {
-    background-color: rgba(220, 53, 69, 0.2) !important;
-    border-color: rgba(220, 53, 69, 0.4) !important;
-}
-
-/* Fix main menu spacing under disclaimer */
-ul.nav.navbar-nav {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-}
-
-.navbar-nav .nav-item {
-    margin-top: 0 !important;
-}
-
-/* Empty state styles */
-.submenu-empty {
-    padding: 0 !important;
-    text-align: center !important;
-    min-height: 100px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    margin-bottom: 0 !important;
-}
-
-.submenu-empty.hidden {
-    display: none !important;
-    height: 0 !important;
-    min-height: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-}
-
-.submenu-item.submenu-slot.hidden {
-    display: none !important;
-    height: 0 !important;
-    min-height: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: none !important;
-}
-
-.empty-message {
-    color: #666 !important;
-    font-style: italic !important;
-    font-size: 14px !important;
-    line-height: 1.4 !important;
-    padding: 20px !important;
-}
-
-/* Hide empty submenu slots by default */
+/* =========================
+ * SUBMENU SLOTS
+ * ========================= */
 .submenu-slot {
     display: none;
 }
 
-/* Show submenu slots when they have content */
 .submenu-slot.show {
     display: block;
 }
