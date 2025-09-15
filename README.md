@@ -1,14 +1,14 @@
-# NFPA Family of Solutions Chrome Extension
+# NFPA Publications Extension
 
-A Chrome browser extension that provides unified access to National Fire Protection Association's digital services with intelligent NFPA Codes & Standards tracking functionality.
+A Chrome browser extension that provides quick access to recently visited NFPA publications with intelligent tracking and bookmarking functionality.
 
 ## 🔧 Technical Overview
 
 ### Architecture
 - **Extension Type**: Chrome Extension (Manifest V3)
-- **Target Platform**: Chromium-based browsers
+- **Target Platform**: Chromium-based browsers (Chrome, Edge)
 - **Permissions**: `activeTab`, `storage`
-- **Content Script Domain**: `https://link.nfpa.org/codes-and-standards/all-codes-and-standards/codes-and-standards/*`
+- **Content Script Domain**: `https://link.nfpa.org/*`
 
 ### Core Components
 
@@ -17,296 +17,256 @@ NFPA_Ext/
 ├── manifest.json          # Extension configuration & permissions
 ├── popup.html            # Main UI interface
 ├── popup.js              # UI logic & storage management  
-├── content-tracker.js    # NFPA Codes visit tracking
+├── content-tracker.js    # NFPA Publications visit tracking
 ├── styles.css            # UI styling & animations
 └── icons/               # Extension icons & branding
 ```
 
 ## 📋 Features
 
-### 1. Navigation Hub
-Quick access menu to NFPA's primary digital services:
-- **NFPA**: Main website (`nfpa.org`)
-- **myNFPA**: User portal (`my.nfpa.org`)
-- **NFPA Codes & Standards**: Code documents with smart tracking
-- **Catalog**: Publications (`catalog.nfpa.org`)
-- **Training**: Training and events (`nfpa.org/training-and-events`)
-- **Support**: Help center (`nfpa.org/help`)
+### 1. Automatic Publication Tracking
+Monitors visits to NFPA publications and automatically saves them for quick access:
 
-### 2. NFPA Codes & Standards Tracking System
+#### URL Pattern Support
+- **Standard Publications**: `https://link.nfpa.org/publications/{id}/{year}`
+- **Free Access Publications**: `https://link.nfpa.org/free-access/publications/{id}/{year}`
 
-#### Automatic Visit Detection
-```javascript
-// URL Pattern Matching
-const match = url.match(/detail\?id=([^&]+)/);
-// Extracts: NFPA1 from https://link.nfpa.org/codes-and-standards/all-codes-and-standards/codes-and-standards/detail?id=NFPA1
-```
+#### Title Generation
+- Standard: `"2023 NFPA 2"`
+- Free Access: `"2023 NFPA 2 (FA)"`
 
-#### Data Structure
-```javascript
-{
-  codeBase: "NFPA1",                    // Extracted identifier
-  title: "NFPA 1: Fire Code",         // Document title
-  url: "https://link.nfpa.org/codes-and-standards/all-codes-and-standards/codes-and-standards/detail?id=NFPA1",
-  timestamp: 1692633600000              // Visit time
-}
-```
+### 2. Smart Publication Management
 
-#### Storage Management
-- **Recent Codes**: FIFO queue (max 10 stored, 5 displayed)
-- **Pinned Codes**: User favorites (unlimited)
-- **Priority Display**: Pinned items shown first
-- **Persistence**: Chrome `storage.local` API
+#### Recent Publications
+- Automatically tracks last 50 visited publications
+- Displays most recent 5 in popup interface
+- Deduplicates by publication code (latest visit wins)
 
-### 3. Interactive UI Elements
+#### Pinning System
+- Pin favorite publications for permanent quick access
+- Pinned items show first in the list
+- Visual indicator (green left border)
+- Unlimited pinned publications
 
-#### Swipe Actions
-- **Left Swipe**: Reveals delete button
-- **Right Swipe**: Reveals pin/unpin button
-- **Visual Feedback**: Colored action areas (red/yellow/red)
+#### Interactive Gestures
+- **Slide Right**: Pin/unpin publication
+- **Slide Left**: Delete from recent/pinned lists
+- **Click**: Open publication in new tab
 
-#### State Management
-- **Pinned Items**: Green left border indicator
-- **Recent Items**: Standard appearance
-- **Empty State**: Instructional message when no codes visited
+### 3. User Interface
+
+#### Fixed Popup Dimensions
+- **Width**: 300px
+- **Height**: 372px (344px content + 28px disclaimer)
+- **Layout**: Scrollable publication list
+
+#### Visual States
+- **Recent Items**: Standard NFPA red styling
+- **Pinned Items**: Green left border + light background
+- **Free Access**: "(FA)" suffix in title
+- **Empty State**: Helpful message when no publications saved
 
 ## 🛠️ Technical Implementation
 
 ### Content Script (`content-tracker.js`)
 ```javascript
-// Automatic tracking on NFPA Codes pages
-(function() {
+// Automatic tracking on NFPA Publications pages
+function trackNFPAPage() {
     const url = window.location.href;
-    const match = url.match(/detail\?id=([^&]+)/);
+    
+    // Support both standard and free-access URLs
+    const standardMatch = url.match(/\/publications\/([^\/]+)\/([^\/\?]+)/);
+    const freeAccessMatch = url.match(/\/free-access\/publications\/([^\/]+)\/([^\/\?]+)/);
+    
+    const match = standardMatch || freeAccessMatch;
     
     if (match) {
-        const codeBase = match[1];
-        const pageTitle = document.title;
+        const [, publicationId, year] = match;
+        const isFreeAccess = url.includes('/free-access/');
         
-        // Store visit data
-        const recentPage = {
-            codeBase: codeBase,
-            title: pageTitle,
-            url: url,
-            timestamp: Date.now()
-        };
-        
-        // Update storage with deduplication
-        chrome.storage.local.get(['recentNfpaCodes'], function(result) {
-            let recentPages = result.recentNfpaCodes || [];
-            recentPages = recentPages.filter(page => page.codeBase !== codeBase);
-            recentPages.unshift(recentPage);
-            recentPages = recentPages.slice(0, 10);
+        // Generate title: "2023 NFPA 2" or "2023 NFPA 2 (FA)"
+        const title = isFreeAccess 
+            ? `${year} NFPA ${publicationId} (FA)` 
+            : `${year} NFPA ${publicationId}`;
             
-            chrome.storage.local.set({recentNfpaCodes: recentPages});
+        // Save to storage with deduplication
+        savePublication({
+            codeBase: `NFPA-${publicationId}-${year}`,
+            title,
+            url,
+            publicationId,
+            year,
+            isFreeAccess,
+            timestamp: Date.now()
         });
     }
-})();
+}
 ```
 
 ### Popup Interface (`popup.js`)
 ```javascript
-// Load and display recent/pinned codes
-function loadRecentNfpaCodes() {
-    chrome.storage.local.get(['recentNfpaCodes', 'pinnedNfpaCodes'], function(result) {
-        const recentPages = result.recentNfpaCodes || [];
-        const pinnedPages = result.pinnedNfpaCodes || [];
-        
-        // Combine with priority: pinned first, then recent (max 5 total)
-        const allPages = [...pinnedPages, ...recentPages.filter(page => 
-            !pinnedPages.some(pinned => pinned.codeBase === page.codeBase)
-        )].slice(0, 5);
-        
-        // Populate UI slots
-        populateUISlots(allPages);
-    });
+// Load and display recent/pinned publications
+function loadRecentNfpaPublications() {
+    chrome.storage.local.get(['recentNfpaPublications', 'pinnedNfpaPublications'], 
+        function(result) {
+            const recent = result.recentNfpaPublications || [];
+            const pinned = result.pinnedNfpaPublications || [];
+            
+            // Combine: pinned first, then recent (max 5 total)
+            const combined = [...pinned, ...recent.filter(page => 
+                !pinned.some(p => p.codeBase === page.codeBase)
+            )].slice(0, 5);
+            
+            populateSlots(combined);
+        }
+    );
 }
 ```
 
-### UI Styling (`styles.css`)
-```css
-/* NFPA Brand Colors */
-:root {
-    --nfpa-primary: #cc092f;
-    --nfpa-secondary: #7a0019;
-    --nfpa-accent: #ff6b35;
-}
-
-/* Sliding Animation System */
-.overlay-slot.slide-right .content-layer {
-    transform: translateX(80px);
-}
-
-.overlay-slot.slide-left .content-layer {
-    transform: translateX(-80px);
-}
-
-/* Action Button Areas */
-.overlay-slot .pin-action {
-    background: #cc092f; /* Red for pin */
-}
-
-.overlay-slot.pinned .pin-action {
-    background: #ffc107; /* Yellow for unpin */
-}
-
-.overlay-slot .delete-action {
-    background: #dc3545; /* Red for delete */
-}
+### Navigation & SPA Support
+```javascript
+// Watch for URL changes in single-page applications
+let currentUrl = location.href;
+setInterval(() => {
+    if (location.href !== currentUrl) {
+        currentUrl = location.href;
+        trackNFPAPage(); // Re-check new URL
+    }
+}, 1000);
 ```
 
-## 📱 User Interface Specifications
+## 🔒 Security & Privacy
 
-### Popup Dimensions
-- **Width**: 300px
-- **Height**: 372px (with 28px disclaimer footer)
-- **Layout**: Fixed overlay system
-
-### Interaction Patterns
-- **Menu Navigation**: Single-click access to services
-- **Submenu Toggle**: Sliding overlay for NFPA Codes & Standards
-- **Item Management**: Swipe gestures for pin/delete actions
-- **Context Awareness**: Highlights current active service
-
-### Visual States
-- **Default**: NFPA red color scheme
-- **Hover**: Subtle background changes
-- **Active**: Bold highlighting for current service
-- **Pinned**: Green left border + light red background
-- **Actions**: Colored reveal areas during swipe
-
-## 🔒 Security & Permissions
-
-### Minimal Permissions Model
+### Minimal Permissions
 ```json
 {
   "permissions": [
-    "activeTab",    // Access current tab URL for context
-    "storage"       // Local data persistence
+    "activeTab",    // Read current tab URL for context
+    "storage"       // Local data persistence only
   ]
 }
 ```
 
 ### Data Privacy
-- **Local Storage Only**: No external API calls
-- **Domain Restricted**: Only monitors NFPA Codes & Standards
-- **User Controlled**: All data management via UI
-- **No Tracking**: No analytics or user identification
+- **Local Storage Only**: No external servers or APIs
+- **Domain Restricted**: Only monitors NFPA publications
+- **User Controlled**: All data management via popup UI
+- **No Tracking**: No analytics, cookies, or user identification
 
-## 🚀 Performance Characteristics
+## � Storage Schema
 
-### Content Script
-- **Lightweight**: ~2KB minified
-- **Non-blocking**: Runs at `document_idle`
-- **Efficient**: Single execution per page load
-- **Minimal DOM**: No UI modifications to host page
+### Recent Publications
+```javascript
+chrome.storage.local.recentNfpaPublications = [
+  {
+    codeBase: "NFPA-2-2023",
+    title: "2023 NFPA 2",
+    url: "https://link.nfpa.org/publications/2/2023",
+    publicationId: "2",
+    year: "2023",
+    isFreeAccess: false,
+    timestamp: 1694764800000,
+    visitDate: "2023-09-15"
+  }
+  // ... up to 50 entries
+];
+```
 
-### Popup Interface
-- **Fast Load**: <100ms typical startup time
-- **Memory Efficient**: ~5MB RAM usage
-- **Smooth Animations**: 60fps CSS transitions
-- **Responsive**: Event delegation for dynamic content
+### Pinned Publications
+```javascript
+chrome.storage.local.pinnedNfpaPublications = [
+  {
+    codeBase: "NFPA-101-2021",
+    title: "2021 NFPA 101",
+    url: "https://link.nfpa.org/publications/101/2021",
+    publicationId: "101", 
+    year: "2021",
+    isFreeAccess: false,
+    timestamp: 1694764800000
+  }
+  // ... unlimited entries
+];
+```
 
-## 🔧 Development Setup
+## � Installation & Development
 
 ### Prerequisites
 - Chrome/Chromium browser (version 88+)
 - Manifest V3 support
 - Developer mode enabled
 
-### Installation
-1. Clone repository
+### Installation Steps
+1. Clone or download the extension files
 2. Open Chrome Extensions (`chrome://extensions/`)
-3. Enable "Developer mode"
+3. Enable "Developer mode" (top right toggle)
 4. Click "Load unpacked"
-5. Select project directory
+5. Select the `NFPA_Ext` directory
 
-### File Structure Explained
+### File Structure
 ```javascript
 manifest.json          // Extension metadata & configuration
-├── permissions        // activeTab, storage
-├── content_scripts    // NFPA Codes page monitoring
-├── action            // Popup configuration
-└── icons             // Extension branding
+├── name: "NFPA Publications Extension"
+├── version: "0.0.1"
+├── permissions: ["activeTab", "storage"]
+├── content_scripts: NFPA domain monitoring
+└── action: popup configuration
 
 popup.html             // Main interface template
-├── NFPA brand colors  // CSS custom properties
-├── Navigation menu    // Primary services list
-├── NFPA Codes         // Expandable submenu
-└── Development banner // Version indicator
+├── Fixed 300x372px dimensions
+├── NFPA brand styling (red/white color scheme)
+├── 5 publication slots
+└── Sliding gesture interactions
 
 popup.js              // User interface logic
-├── Menu highlighting  // Current service detection
-├── Storage management // Recent/pinned data handling
-├── UI interactions    // Swipe gestures & animations
-└── Event delegation   // Dynamic content handling
+├── Publication loading & display
+├── Pin/unpin functionality
+├── Delete functionality
+├── Sliding gesture detection
+└── Storage management
 
-content-tracker.js    // Background page monitoring
-├── URL pattern match  // NFPA Codes detection
-├── Data extraction    // Title & identifier parsing
-├── Storage updates    // Recent visits tracking
-└── Deduplication      // Prevent duplicate entries
+content-tracker.js    // Background monitoring
+├── URL pattern matching
+├── Publication data extraction
+├── Automatic saving
+├── SPA navigation detection
+└── Error handling
 
 styles.css            // Visual presentation
-├── NFPA color scheme  // Brand consistency
-├── Sliding animations // Smooth transitions
-├── Swipe interactions // Touch-like gestures
-└── Responsive layout  // Fixed popup dimensions
+├── NFPA brand colors
+├── Sliding animations
+├── Interactive states
+└── Responsive layout
 ```
 
-## 🐛 Known Limitations
+## 🐛 Known Limitations & Considerations
 
-### Current Constraints
-- **Browser Support**: Chrome/Chromium only (Manifest V3)
-- **Domain Scope**: Only tracks NFPA Codes & Standards pages
-- **Storage Limit**: Chrome storage quotas apply
-- **UI Size**: Fixed 300×372px popup window
+### Browser Support
+- **Supported**: Chrome, Edge, Opera (Chromium-based)
+- **Unsupported**: Firefox (would require Manifest V2 conversion)
+- **Minimum Version**: Chrome 88+ (Manifest V3 requirement)
 
-### Future Enhancements
-- [ ] Firefox compatibility (Manifest V2 fallback)
-- [ ] Keyboard navigation support
-- [ ] Export/import functionality for bookmarks
-- [ ] Advanced filtering and search capabilities
+### Performance
+- **Content Script**: ~2KB, runs on document start
+- **Popup**: <100ms load time, ~5MB memory usage
+- **Storage**: Local only, respects Chrome quotas
 
-## 📊 Storage Schema
-
-### Recent NFPA Codes
-```javascript
-chrome.storage.local.recentNfpaCodes = [
-  {
-    codeBase: "NFPA1",
-    title: "NFPA 1: Fire Code",
-    url: "https://link.nfpa.org/codes-and-standards/all-codes-and-standards/codes-and-standards/detail?id=NFPA1",
-    timestamp: 1692633600000
-  },
-  // ... up to 10 entries
-];
-```
-
-### Pinned NFPA Codes
-```javascript
-chrome.storage.local.pinnedNfpaCodes = [
-  {
-    codeBase: "NFPA101", 
-    title: "NFPA 101: Life Safety Code",
-    url: "https://link.nfpa.org/codes-and-standards/all-codes-and-standards/codes-and-standards/detail?id=NFPA101",
-    timestamp: 1692633600000
-  },
-  // ... unlimited entries
-];
-```
+### Edge Cases
+- **Extension Reload**: May lose tracking until page refresh
+- **Multiple Tabs**: Each tab tracks independently
+- **Incognito Mode**: Limited functionality (storage restrictions)
 
 ## 🔄 Version History
 
-### v0.0.1 (Development)
+### v0.0.1 (Current)
 - Initial implementation
-- Core navigation functionality
-- NFPA Codes & Standards tracking system
-- Swipe gesture interactions
+- NFPA Publications automatic tracking
 - Pin/unpin functionality
+- Sliding gesture interactions
+- Standard and free-access URL support
+- Context invalidation error handling
 
 ---
 
-**Development Status**: Not for public release  
-**Maintained by**: WhartonUS  
-**License**: Internal NFPA Development
+**Development Status**: Ready for team handoff  
+**Target Audience**: NFPA internal development teams  
+**License**: Internal NFPA Development Only
